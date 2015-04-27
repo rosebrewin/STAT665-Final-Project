@@ -3,31 +3,32 @@
 ###########################################################
 
 ### Set up
+Sys.setlocale('LC_ALL','C')
 myletters <- c(letters, " ")
-Sys.setlocale('LC_ALL','C') 
+myletterpairs <- matrix(nrow=length(myletters), ncol=length(myletters))
+for (i in 1:length(myletters)) {
+  for (j in 1:length(myletters)) {
+    myletterpairs[j, i] <- paste(myletters[i], myletters[j], sep="")
+  }
+}
+myletterpairs <- as.vector(myletterpairs)
 
 clean <- function(string){
-  string <- tolower(string)
-  vec <- unlist(strsplit(string, split=""))
-  vec <- vec[vec %in% myletters]
+  vec <- tolower(string)
+  vec <- substring(vec, seq(1, nchar(vec)-1), seq(2, nchar(vec)))
+  vec <- vec[vec %in% myletterpairs]
   return(vec)
 }
 
 freq <- function(vec) {
-  ff <- sapply(myletters[-length(myletters)], FUN = function(x){mean(vec==x)})
+  ff <- sapply(myletterpairs, FUN = function(x){mean(vec==x)})
   ff[is.na(ff)] <- 0
   return(ff)
 }
 
 features <- function(text, language) {
-  mat <- matrix(nrow=length(myletters)-1, ncol=length(myletters)-1)
-  for (i in 1:(length(myletters)-1)) {
-    following <- text[which(text==myletters[i]) + 1]
-    following <- following[!is.na(following)]
-    mat[i, ] <- freq(following)
-  }
-  vec <- t(as.vector(mat))
-  return(cbind(language, as.data.frame(vec)))
+  vec <- freq(text)
+  return(cbind(language, as.data.frame(t(vec))))
 }
 
 ###########################################################
@@ -35,22 +36,18 @@ features <- function(text, language) {
 ###########################################################
 
 EngBible <- scan("http://www.gutenberg.org/cache/epub/10/pg10.txt", what="character", sep="\n")
+EngBible <- EngBible[1:1000]
 
 EngBible <- sapply(X = EngBible, FUN = clean)
 
 ## Shorten for testing purposes
-EngBible <- EngBible[1:1000]
 
 data <- features(EngBible[[1]], language=1)
-
 
 for (i in 1:length(EngBible)) {
   data[i ,] <- features(EngBible[[i]], language=1)
   print(c("English entry number", i))
 }
-
-then <- Sys.time()
-now <- Sys.time()
 
 beep()
 
@@ -65,9 +62,10 @@ GerBible <- scan("http://bitflow.dyndns.org/german/MartinLuther-1912/Martin_Luth
 GerBible <- GerBible[1:1000]
 
 clean2 <- function(string){
-  vec <- unlist(strsplit(string, split=""))
-  vec <- vec[-(1:4)] # remove the 'Gen' bit
-  vec <- vec[vec %in% myletters]
+  vec <- tolower(string)
+  vec <- substring(vec, seq(1, nchar(vec)-1), seq(2, nchar(vec)))
+  vec <- vec[-(1:3)]
+  vec <- vec[vec %in% myletterpairs]
   return(vec)
 }
 
@@ -78,4 +76,4 @@ for (i in 1:length(GerBible)) {
   print(c("German entry number", i))
 }
 
-write.csv(data, file="bibleData3.csv")
+write.csv(data, file="bibleData4.csv")
