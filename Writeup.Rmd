@@ -1,0 +1,108 @@
+---
+title: 'STAT665 Final Project: TITLE'
+author: "Rose Brewin, Emily Dodwell, Samantha Emanuele"
+date: "May 5, 2015"
+output: 
+  pdf_document:
+    toc: true    
+    toc_depth: 3
+    number_sections: true
+    fig_caption: true
+---
+
+```{r, echo=FALSE}
+library(knitr)
+```
+
+
+\newpage
+
+# Introduction
+
+In this paper, we explore various machine learning classification algorithms to determine the most computationally efficient and effective method by which to identify the language in which a sentence has been written (as either English or other), by recognition of letter frequency.  Such a classification mechanism has many relevant applications, including services that identify when text must be translated to the user's default language.  An advantage for using machine learning methods for such a task is the lack of reliance on a language dictionary; that is, the algorithm does not rely on prior knowledge of the given language, including words' meanings, grammar structures, and correct use of accents and punctuation.
+
+Given this lack of reliance on a single "dictionary", the "best" (however to choose to define) method may then be extended to consider how different contexts may use language differently.  For example, \textit{The New York Times} has an extensive language styleguide that may differentiate the formality of its articles from more colloquial interactions, such social media posts on Twitter or Instagram.
+
+```{r, echo = FALSE}
+# Read in single letter files
+x <- read.csv("trainSingle.csv", stringsAsFactors = FALSE)
+y <- read.csv("testSingle.csv", stringsAsFactors = FALSE)
+  
+# Recode language (0 = English)
+x$language <- ifelse(x$language == 0, 0, 1)
+y$language <- ifelse(y$language == 0, 0, 1)
+```
+
+# Methodology for Data Collection
+
+We first consider frequency of the twenty-six letters of the Roman alphabet, along with a blank space.  
+
+## Data Collection
+
+To train the various classfication algorithms considered, we first found plain text documents of the Bible in various languages (citation needed HERE): English, French, Spanish, Latin, German, Dutch, and Italian.  For each of these text documents, we cleaned them in the following manner:
+
+Note: other languages chosen because Bibles available on website, also wanted to determine robustness among romance languages derived from Latin; goal to compare specifically as English/non-English
+
+> * Upon scanning the text document into R, save each new line as an individual observation in a list.
+> * Make each observation a vector of individual characters, convert all letters to lowercase, and remove any character (including any accented letters) that is not a space or letter in the Roman alphabet.
+> * Language data frame then consisted of twenty-seven columns, where each row contains the empirical distribution of letters in the observation.
+
+For example:
+
+```{r, results='asis'}
+example <- "Machine Learning is ~*SuPeR FuN*~ and we learned so much :) 
+We hope you enjoy our project!"
+myletters <- c(letters, " ")
+clean <- function(string){
+  vec <- tolower(string)
+  vec <- unlist(strsplit(vec, split=""))
+  vec <- vec[vec %in% myletters]
+  return(vec)
+}
+cleaned <- clean(example); cleaned
+features <- function(vec) {
+  vec <- sapply(myletters, FUN = function(x){round(mean(vec==x),2)})
+  vec[is.na(vec)] <- 0
+  return(data.frame(frequency = vec))
+}
+kable(features(cleaned))
+```
+
+## Models Considered
+
+For this paper we considered four different classification algorithms:
+
+* Logistic Regression
+* Support Vector Machine with three different kernels:
+    * Linear
+    * Gaussian
+    * Kullback-Leibler
+  
+We evaluated the predictive ability of each model by its misclassification rate on a test set.
+
+# Logistic Regression
+
+Start with this as a basic model for baseline because well-known and used algo.
+
+In our data, 0 identifies English language observations, while 1 identifies observations in all other languages.
+
+```{r, warning=FALSE, echo=FALSE}
+lr.0 <- glm(language ~ ., data = x, family = "binomial")
+pr.0 <- predict(lr.0, newdata = y, type = "response")
+
+# Make predictions binary (0 = English, 1 = other)
+pr.0 <- ifelse(pr.0 < .5, 0, 1)
+
+# Misclassification rate
+mis.l <- round(mean(pr.0 != y$language)*100, 2)
+```
+
+The misclassification rate of the logistic regression on the test set was `r mis.l`%. 
+```{r}
+plot(pr.0, ylab="Prediction", main="Logistic Regression")
+```
+
+# Discussion of Models and Choice of "Best"
+
+
+# Twitter/NYTimes Application
