@@ -188,8 +188,8 @@ a <- read.csv("trainDouble.csv", stringsAsFactors = FALSE)
 b <- read.csv("testDouble.csv", stringsAsFactors = FALSE)
   
 # Recode language (0 = English)
-a$language <- ifelse(x$language == 0, 0, 1)
-b$language <- ifelse(y$language == 0, 0, 1)
+a$language <- ifelse(a$language == 0, 0, 1)
+b$language <- ifelse(b$language == 0, 0, 1)
 ```
 
 # Twitter/NYTimes Application
@@ -200,6 +200,25 @@ All editors and writers for \textit{The New York Times} are expected to uphold t
 
 ## Collection of NYTimes and Twitter Data (Sam)
 
-Using our "best" method, we tried to correctly classify between social media messages from Twitter and text from \textit{The New York Times} articles.  In order to do this, we created a dataset similar to that of the Bible consisting of 1000 obseravtions from Twitter and 1000 observations from \textit{The New York Times}.  For the Twitter data, we extracted 1000 of the most recent tweets using their API. Each tweet was then cleaned and the emperical distribution of letters was obtained using the methodology mentioned above.  This entire process was repeated for \textit{The New York Times} data, where we scraped the top stories using their API.
+Using our "best" method, we tried to correctly classify between social media messages from Twitter and text from \textit{The New York Times} articles.  In order to do this, we created a dataset similar to that of the Bible consisting of 1000 observations from Twitter and 1000 observations from \textit{The New York Times}.  For the Twitter data, we extracted 1000 of the most recent tweets using their API. Each tweet was then cleaned and the emperical distribution of letters was obtained using the methodology mentioned above.  This entire process was repeated for \textit{The New York Times} data, where we scraped the top stories using their API.
+
+```{r}
+# Twitter is language == 1
+app <- read.csv("tweets_nytimes.csv", stringsAsFactors = FALSE)
+
+# Create test and training sets
+these <- sample(1001:2000, 700, replace = FALSE)
+train <- app[c(1:700, these),]
+test <- app[-as.numeric(rownames(train)),]
+
+# Model and prediction
+svg.app <- ksvm(language ~ ., data=train, kernel="rbfdot", scaled=F, type="C-svc")
+pr.app <- predict(svg.app, newdata = test, type = "response")
+
+# Misclassification rate
+1-mean(pr.app == test$language)
+```
 
 ## Findings of model once applied to this task
+
+Subleties: Capitalization, punctuation (differences in use)
