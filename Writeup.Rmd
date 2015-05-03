@@ -96,7 +96,7 @@ We consider a basic logistic regression model as a baseline against which to com
 
 In our data, 0 identifies English language observations, while 1 identifies observations in all other languages.
 
-```{r, warning=FALSE, echo=FALSE}
+```{r, warning=FALSE, echo=FALSE, fig.cap="Put caption here!"}
 # Model and prediction
 then <- Sys.time()
 lr.0 <- glm(language ~ ., data = x, family = "binomial")
@@ -119,13 +119,10 @@ plot(pr.0p, ylab="Prediction",xlab = 'Observation', main="Logistic Regression",
      col = y$error, pch = 16)
 legend('right', inset = c(-0.3,0),c('Correct', 'Incorrect'), col = c(3,2), 
        pch = 16)
-dev.off() # Reset Graph Options
+invisible(dev.off()) # Reset Graph Options
 ```
 
 The misclassification rate of the logistic regression on the test set was `r mis.l`%. 
-```{r}
-plot(pr.0, ylab="Prediction", main="Logistic Regression")
-```
 
 # Support Vector Machine
 
@@ -133,22 +130,29 @@ plot(pr.0, ylab="Prediction", main="Logistic Regression")
 
 ```{r}
 # Model and prediction
+then <- Sys.time()
 sv.l <- ksvm(language ~ ., data=x, kernel="vanilladot", scaled=F, type="C-svc")
+now <- Sys.time()
 pr.svl <- predict(sv.l, newdata = y, type = "response")
 
 # Misclassification rate
 mis.svl <- round(mean(pr.svl != y$language)*100, 2)
+# Computational time
+time.svl <- round(as.numeric(now-then), 2)
 ```
 
 ## Gaussian Kernel
 
 ```{r}
 # Model and prediction
+then <- Sys.time()
 sv.g <- ksvm(language ~ ., data=x, kernel="rbfdot", scaled=F, type="C-svc")
+now <- Sys.time()
 pr.svg <- predict(sv.g, newdata = y, type = "response")
 
 # Misclassification rate
 mis.svg <- round(mean(pr.svg != y$language)*100, 2)
+time.svg <- round(as.numeric(then-now), 2)
 ```
 
 ## Kullback-Leibler Kernel
@@ -185,6 +189,7 @@ mykernel <- function(p, q) {
 class(mykernel) <- "kernel"
 
 mis.svk <- round(0.242381*100, 2)
+time.svk <- 100
 # Model and prediction
 # sv.k <- ksvm(language ~ ., data=x, kernel=mykernel, type="C-svc")
 # pr.svk <- predict(sv.k, newdata = y, type = "response")
@@ -197,9 +202,10 @@ mis.svk <- round(0.242381*100, 2)
 
 ```{r, results='asis', echo=FALSE}
 # Table of model, time elapsed, misclassification error?
-models <- c("Logisitc", "Linear SVM", "Gaussian SVM", "Kullback-Leibler SVM")
+models <- c("Logistic", "Linear SVM", "Gaussian SVM", "Kullback-Leibler SVM")
 classerrors <- c(mis.l, mis.svl, mis.svg, mis.svk)
-errortable <- data.frame(Model=models, "Misclassification"=classerrors)
+times <- c(time.l, time.svl, time.svg, time.svk)
+errortable <- data.frame(Model=models, Misclassification=classerrors, Time=times)
 kable(errortable)
 # Include example of sentence being classified?
 ```
