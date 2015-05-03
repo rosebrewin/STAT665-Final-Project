@@ -16,8 +16,6 @@ library(knitr)
 library(kernlab)
 ```
 
-Thoughts: Should we try a test set of data that is not Bible sentences?
-
 \newpage
 
 # Introduction
@@ -71,11 +69,16 @@ features <- function(vec) {
   return(data.frame(frequency = vec))
 }
 
+<<<<<<< Updated upstream
 # 
 # test <- t(features(cleaned))[,1:15]
 # test
 # kable(test)
 # #kable(features(cleaned)[16:27,])
+=======
+
+kable(features(cleaned))
+>>>>>>> Stashed changes
 ```
 
 ## Models Considered
@@ -237,12 +240,17 @@ Using our "best" method, we tried to correctly classify between social media mes
 app <- read.csv("tweets_nytimes.csv", stringsAsFactors = FALSE)
 
 # Create test and training sets
+set.seed(1)
 these <- sample(1001:2000, 700, replace = FALSE)
 train <- app[c(1:700, these),]
 test <- app[-as.numeric(rownames(train)),]
 
 # Model and prediction
 svg.app <- ksvm(language ~ ., data=train, kernel="rbfdot", scaled=F, type="C-svc")
+
+# Chosen sigma
+svg.app@kernelf@kpar$sigma
+
 pr.app <- predict(svg.app, newdata = test, type = "response")
 
 # Misclassification rate
