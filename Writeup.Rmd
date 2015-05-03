@@ -10,18 +10,21 @@ output:
     fig_caption: true
 ---
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# Load required packages
 library(knitr)
+library(kernlab)
 ```
 
+Thoughts: Should we try a test set of data that is not Bible sentences?
 
 \newpage
 
 # Introduction
 
-In this paper, we explore various machine learning classification algorithms to determine the most computationally efficient and effective method by which to identify the language in which a sentence has been written (as either English or other), by recognition of letter frequency.  Such a classification mechanism has many relevant applications, including services that identify when text must be translated to the user's default language.  An advantage for using machine learning methods for such a task is the lack of reliance on a language dictionary; that is, the algorithm does not rely on prior knowledge of the given language, including words' meanings, grammar structures, and correct use of accents and punctuation.
+In this paper, we explore various machine learning classification algorithms to determine the most effective and computationally efficient method by which to identify the language in which a sentence has been written (as either English or other), by recognition of letter frequency.  Such a classification mechanism has many relevant applications, including web services that identify when text must be translated to the user's default language.  An advantage for using machine learning methods for such a task is the lack of reliance on a language dictionary; that is, the algorithm does not rely on prior knowledge of the given language, including words' meanings, grammar structures, and correct use of accents and punctuation.
 
-Given this lack of reliance on a single "dictionary", the "best" (however to choose to define) method may then be extended to consider how different contexts may use language differently.  For example, \textit{The New York Times} has an extensive language styleguide that may differentiate the formality of its articles from more colloquial interactions, such social media posts on Twitter or Instagram.
+Given this lack of reliance on a single "dictionary", our choice of a best method may then be extended to consider how different contexts may use language differently.  For example, \textit{The New York Times} has an extensive language styleguide that may differentiate the formality of its articles from more colloquial interactions, such as social media posts on Twitter or Instagram.
 
 ```{r, echo = FALSE}
 # Read in single letter files
@@ -39,9 +42,7 @@ We first consider frequency of the twenty-six letters of the Roman alphabet, alo
 
 ## Data Collection
 
-To train the various classfication algorithms considered, we first found plain text documents of the Bible in various languages (citation needed HERE): English, French, Spanish, Latin, German, Dutch, and Italian.  For each of these text documents, we cleaned them in the following manner:
-
-Note: other languages chosen because Bibles available on website, also wanted to determine robustness among romance languages derived from Latin; goal to compare specifically as English/non-English
+To train the various classfication algorithms considered, we first found plain text documents of the Bible in various languages (citation needed HERE): English, French, Spanish, Latin, German, Dutch, and Italian.  Our decision to use the Bible was based on its status as a universal text, and therefore it acts as a control among the languages considered.  The accessibility of plain text Bibles written in these languages informed their choosing, and because the goal of our model is to identify English sentences from non-English sentences, we were interested in its robustness considering that  the Romance languages are Latin derivatives.  For each of these text documents, we cleaned them in the following manner:
 
 > * Upon scanning the text document into R, save each new line as an individual observation in a list.
 > * Make each observation a vector of individual characters, convert all letters to lowercase, and remove any character (including any accented letters) that is not a space or letter in the Roman alphabet.
@@ -52,14 +53,18 @@ For example:
 ```{r, results='asis'}
 example <- "Machine Learning is ~*SuPeR FuN*~ and we learned so much :) 
 We hope you enjoy our project!"
+
 myletters <- c(letters, " ")
+
 clean <- function(string){
   vec <- tolower(string)
   vec <- unlist(strsplit(vec, split=""))
   vec <- vec[vec %in% myletters]
   return(vec)
 }
+
 cleaned <- clean(example); cleaned
+
 features <- function(vec) {
   vec <- sapply(myletters, FUN = function(x){round(mean(vec==x),2)})
   vec[is.na(vec)] <- 0
@@ -70,7 +75,7 @@ kable(features(cleaned))
 
 ## Models Considered
 
-For this paper we considered four different classification algorithms:
+For this paper we considered four classification algorithms:
 
 * Logistic Regression
 * Support Vector Machine with three different kernels:
@@ -82,11 +87,12 @@ We evaluated the predictive ability of each model by its misclassification rate 
 
 # Logistic Regression
 
-Start with this as a basic model for baseline because well-known and used algo.
+We consider a basic logistic regression model as a baseline against which to compare other machine learning classification algorithms due to its well-known status.
 
 In our data, 0 identifies English language observations, while 1 identifies observations in all other languages.
 
 ```{r, warning=FALSE, echo=FALSE}
+# Model and prediction
 lr.0 <- glm(language ~ ., data = x, family = "binomial")
 pr.0 <- predict(lr.0, newdata = y, type = "response")
 
@@ -102,7 +108,98 @@ The misclassification rate of the logistic regression on the test set was `r mis
 plot(pr.0, ylab="Prediction", main="Logistic Regression")
 ```
 
+# Support Vector Machine
+
+## Linear Kernel
+
+```{r}
+# Model and prediction
+sv.l <- ksvm(language ~ ., data=x, kernel="vanilladot", scaled=F, type="C-svc")
+pr.svl <- predict(sv.l, newdata = y, type = "response")
+
+# Misclassification rate
+1-mean(pr.svl == y$language)
+```
+
+## Gaussian Kernel
+
+```{r}
+# Model and prediction
+sv.g <- ksvm(language ~ ., data=x, kernel="rbfdot", scaled=F, type="C-svc")
+pr.svg <- predict(sv.g, newdata = y, type = "response")
+
+# Misclassification rate
+1-mean(pr.svg == y$language)
+```
+
+## Kullback-Leibler Kernel
+
+The feature vectors in our model are of the form of relative frequencies. We can take advantage of this structure by treating them as empirical probability distributions. We assume that languages have an underlying distribution on the frequency of letters, and that from this distribution various sentences have been randomly created. 
+
+To determine which underlying distribution a given sentence comes from, we can use techniques from statistical theory. We will use a kernel based on the Kullback-Leibler Divergence between two distributions
+
+$$D(p \|  q) = \sum_{i=1}^n p_i \log\left(\frac{p_i}{q_i}\right) $$
+
+In order to use this as a kernel in a support vector machine, we must ensure it is symmetric and positive semidefinite. **CITIATION** suggests the following transformation as a kernel:
+$$k(x, y) = \exp(-a(D(x\|y) + D(y\|x)))$$
+where $a$ is a parameter to be chosen.
+
+Using the \textit{kernlab} package, we implemented this SVM on our language classification data set. The first observation was that this runs far slower than any of the alternative algorithms. We suspect that this is to some extent because the package is not optimised for our kernel.
+
+We experimented with different values of the parameter $a$, and found that a value of **SOMETHING** minimised the misclassification rate on the test set. With this we were able to achieve a misclassification rate of **SOMETHING**.
+
+```{r, warning=FALSE}
+# Add very small value to all values so 0 is not an issue
+xnew <- x; ynew <- y
+xnew[,-1] <- xnew[,-1] + .000000000000000001
+ynew[,-1] <- ynew[,-1] + .000000000000000001
+
+KL <- function(p, q) {
+  vec <- p*log(p/q)
+  return(sum(vec, na.rm=T))
+}
+
+mykernel <- function(p, q) {
+  exp(-0.01*(KL(p, q) + KL(q, p)))  
+}
+
+class(mykernel) <- "kernel"
+
+# Model and prediction
+# sv.k <- ksvm(language ~ ., data=x, kernel=mykernel, type="C-svc")
+# pr.svk <- predict(sv.k, newdata = y, type = "response")
+# 
+# # Misclassification rate
+# 1-mean(pr.svk == y$language) #0.242381
+```
+
 # Discussion of Models and Choice of "Best"
 
+```{r}
+# Table of model, time elapsed, misclassification error?
+# Include example of sentence being classified?
+```
+
+# Two-letter Combinations
+
+```{r, echo=FALSE}
+# Read in two-letter files
+a <- read.csv("trainDouble.csv", stringsAsFactors = FALSE)
+b <- read.csv("testDouble.csv", stringsAsFactors = FALSE)
+  
+# Recode language (0 = English)
+a$language <- ifelse(x$language == 0, 0, 1)
+b$language <- ifelse(y$language == 0, 0, 1)
+```
 
 # Twitter/NYTimes Application
+
+We have demonstrated that a support vector machine with (gaussian kernel) has great success at differentiating sentences written in the English language from sentences written in other languages, even though they may be closely related to English.  We are also interested in the extension of this finding to different uses of the English language.  Formal writing differs dramatically in style, punctuation, sentence structure, and vocabulary from more casual interactions, such as those that take place through social media platforms that make frequent use of abbreviations and slang.  The simplicity of our model meant that it did not consider, and we are curious as to whether or not it is still effective when challenged to distinguish between formal and colloquial use of the English language.
+
+All editors and writers for \textit{The New York Times} are expected to uphold the regulations set forth in \textit{The New York Times Manual of Style and Usage}; for this reason, we train our model with sentences pulled from several articles in this newspaper.  (Note: because our cleaning function separates text into sentences along the period "." it separates words such as "Ms." and "Mr." from the remainder of the sentence to which they may belong.  This is a weakness of which we are aware.)  We train our model on colloquial usage of the English language with public twitter data.
+
+## Collection of NYTimes and Twitter Data (Sam)
+
+Using our "best" method, we tried to correctly classify between social media messages from Twitter and text from \textit{The New York Times} articles.  In order to do this, we created a dataset similar to that of the Bible consisting of 1000 obseravtions from Twitter and 1000 observations from \textit{The New York Times}.  For the Twitter data, we extracted 1000 of the most recent tweets using their API. Each tweet was then cleaned and the emperical distribution of letters was obtained using the methodology mentioned above.  This entire process was repeated for \textit{The New York Times} data, where we scraped the top stories using their API.
+
+## Findings of model once applied to this task
