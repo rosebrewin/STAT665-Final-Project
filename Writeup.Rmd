@@ -64,13 +64,15 @@ clean <- function(string){
 cleaned <- clean(example); cleaned
 
 features <- function(vec) {
-  vec <- sapply(myletters, FUN = function(x){round(mean(vec==x),2)})
+  vec <- as.numeric(sapply(myletters, FUN = function(x){round(mean(vec==x),2)}))
   vec[is.na(vec)] <- 0
-  return(data.frame(frequency = vec))
+  dat <- as.data.frame(t(vec))
+  names(dat) <- myletters
+  return(dat)
 }
 
-kable(features(cleaned))
-
+kable(features(cleaned)[,1:15])
+kable(features(cleaned)[,16:27])
 ```
 
 ## Models Considered
@@ -93,27 +95,27 @@ In our data, 0 identifies English language observations, while 1 identifies obse
 
 ```{r, warning=FALSE, echo=FALSE, fig.cap="Put caption here!"}
 # Model and prediction
-then <- Sys.time()
+  then <- Sys.time()
 lr.0 <- glm(language ~ ., data = x, family = "binomial")
-now <- Sys.time()
+  now <- Sys.time()
 pr.0 <- predict(lr.0, newdata = y, type = "response")
 
 # Make predictions binary (0 = English, 1 = other)
-pr.0 <- ifelse(pr.0 < .5, 0, 1)
+pr.b <- ifelse(pr.0 < .5, 0, 1)
 
 # Misclassification rate
-mis.l <- round(mean(pr.0 != y$language)*100, 2)
+mis.l <- round(mean(pr.b != y$language)*100, 2)
+
 # Computational time
 time.l <- round(as.numeric(now-then), 2)
 
-pr.0p <- predict(lr.0, newdata = y, type = "response") # Actual response value
+# Plot
 y$error <- 2 # Incorrect Classification
-y$error[pr.0 == y$language] <- 3 # Correct Classification
+y$error[pr.b == y$language] <- 3 # Correct Classification
 par(mar=c(5.1, 5.1, 5.1, 8.1), xpd=TRUE)
-plot(pr.0p, ylab="Prediction",xlab = 'Observation', main="Logistic Regression",
+plot(pr.0, ylab="Prediction",xlab = 'Observation', main="Logistic Regression",
      col = y$error, pch = 16)
-legend('right', inset = c(-0.3,0),c('Correct', 'Incorrect'), col = c(3,2), 
-       pch = 16)
+legend('right', inset = c(-0.3,0),c('Correct', 'Incorrect'), col = c(3,2), pch = 16)
 invisible(dev.off()) # Reset Graph Options
 ```
 
@@ -132,6 +134,7 @@ pr.svl <- predict(sv.l, newdata = y, type = "response")
 
 # Misclassification rate
 mis.svl <- round(mean(pr.svl != y$language)*100, 2)
+
 # Computational time
 time.svl <- round(as.numeric(now-then), 2)
 ```
@@ -147,6 +150,8 @@ pr.svg <- predict(sv.g, newdata = y, type = "response")
 
 # Misclassification rate
 mis.svg <- round(mean(pr.svg != y$language)*100, 2)
+
+# Computational time
 time.svg <- round(as.numeric(then-now), 2)
 ```
 
@@ -185,6 +190,7 @@ class(mykernel) <- "kernel"
 
 mis.svk <- round(0.242381*100, 2)
 time.svk <- 100
+
 # Model and prediction
 # sv.k <- ksvm(language ~ ., data=x, kernel=mykernel, type="C-svc")
 # pr.svk <- predict(sv.k, newdata = y, type = "response")
@@ -195,26 +201,47 @@ time.svk <- 100
 
 # Discussion of Models and Choice of "Best"
 
+For Gaussian to work, you need a shit ton of data.  Potentially overfitting -- i.e. we are learning more about the noise the a generalization of the actual system.
+
 ```{r, results='asis', echo=FALSE}
 # Table of model, time elapsed, misclassification error?
 models <- c("Logistic", "Linear SVM", "Gaussian SVM", "Kullback-Leibler SVM")
 classerrors <- c(mis.l, mis.svl, mis.svg, mis.svk)
 times <- c(time.l, time.svl, time.svg, time.svk)
 errortable <- data.frame(Model=models, Misclassification=classerrors, Time=times)
+
 kable(errortable)
+
 # Include example of sentence being classified?
 ```
 
 # Two-letter Combinations
 
 ```{r, echo=FALSE}
-# Read in two-letter files
+## Read in two-letter files
 a <- read.csv("trainDouble.csv", stringsAsFactors = FALSE)
 b <- read.csv("testDouble.csv", stringsAsFactors = FALSE)
   
 # Recode language (0 = English)
 a$language <- ifelse(a$language == 0, 0, 1)
 b$language <- ifelse(b$language == 0, 0, 1)
+
+## Logistic regression model and prediction
+lr.d <- glm(language ~ ., data = a, family = "binomial")
+prlr.d <- predict(lr.d, newdata = b, type = "response")
+
+  # Make predictions binary (0 = English, 1 = other)
+  prlr.db <- ifelse(prlr.d < .5, 0, 1)
+  
+  # Misclassification rate
+  round(mean(prlr.db != b$language)*100, 2)
+
+## SVM Gaussian model and prediction
+svg.d <- ksvm(language ~ ., data=a, kernel="rbfdot", scaled=F, type="C-svc")
+prsvg.d <- predict(svg.d, newdata = b, type = "response")
+
+  # Misclassification rate
+  round(mean(prsvg.d != b$language)*100, 2)
 ```
 
 # Twitter/NYTimes Application
@@ -227,7 +254,7 @@ All editors and writers for \textit{The New York Times} are expected to uphold t
 
 Using our "best" method, we tried to correctly classify between social media messages from Twitter and text from \textit{The New York Times} articles.  In order to do this, we created a dataset similar to that of the Bible consisting of 1000 observations from Twitter and 1000 observations from \textit{The New York Times}.  For the Twitter data, we extracted 1000 of the most recent tweets using their API. Each tweet was then cleaned and the emperical distribution of letters was obtained using the methodology mentioned above.  This entire process was repeated for \textit{The New York Times} data, where we scraped the top stories using their API.
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 # Twitter is language == 1
 app <- read.csv("tweets_nytimes.csv", stringsAsFactors = FALSE)
 
@@ -237,18 +264,31 @@ these <- sample(1001:2000, 700, replace = FALSE)
 train <- app[c(1:700, these),]
 test <- app[-as.numeric(rownames(train)),]
 
-# Model and prediction
+## Logistic regression model and prediction
+lr.app <- glm(language ~ ., data = train, family = "binomial")
+prlr.app <- predict(lr.app, newdata = test, type = "response")
+
+  # Make predictions binary (0 = English, 1 = other)
+  prlr.appb <- ifelse(prlr.app < .5, 0, 1)
+
+  plot(prlr.appb)
+
+  # Misclassification rate
+  round(mean(prlr.appb != test$language)*100, 2)
+
+## SVM with Gaussian kernel
 svg.app <- ksvm(language ~ ., data=train, kernel="rbfdot", scaled=F, type="C-svc")
 
-# Chosen sigma
-svg.app@kernelf@kpar$sigma
+  # Identify chosen sigma
+  svg.app@kernelf@kpar$sigma
+  pr.svgapp <- predict(svg.app, newdata = test, type = "response")
 
-pr.app <- predict(svg.app, newdata = test, type = "response")
-
-# Misclassification rate
-1-mean(pr.app == test$language)
+  # Misclassification rate
+  1-mean(pr.svgapp == test$language)
 ```
 
 ## Findings of model once applied to this task
 
 Subleties: Capitalization, punctuation (differences in use)
+
+## Conclusion
