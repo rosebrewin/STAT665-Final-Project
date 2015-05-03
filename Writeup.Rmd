@@ -71,11 +71,11 @@ features <- function(vec) {
   return(data.frame(frequency = vec))
 }
 
-
-test <- t(features(cleaned))[,1:15]
-test
-kable(test)
-#kable(features(cleaned)[16:27,])
+# 
+# test <- t(features(cleaned))[,1:15]
+# test
+# kable(test)
+# #kable(features(cleaned)[16:27,])
 ```
 
 ## Models Considered
@@ -98,7 +98,9 @@ In our data, 0 identifies English language observations, while 1 identifies obse
 
 ```{r, warning=FALSE, echo=FALSE}
 # Model and prediction
+then <- Sys.time()
 lr.0 <- glm(language ~ ., data = x, family = "binomial")
+now <- Sys.time()
 pr.0 <- predict(lr.0, newdata = y, type = "response")
 
 # Make predictions binary (0 = English, 1 = other)
@@ -106,6 +108,18 @@ pr.0 <- ifelse(pr.0 < .5, 0, 1)
 
 # Misclassification rate
 mis.l <- round(mean(pr.0 != y$language)*100, 2)
+# Computational time
+time.l <- round(as.numeric(now-then), 2)
+
+pr.0p <- predict(lr.0, newdata = y, type = "response") # Actual response value
+y$error <- 2 # Incorrect Classification
+y$error[pr.0 == y$language] <- 3 # Correct Classification
+par(mar=c(5.1, 5.1, 5.1, 8.1), xpd=TRUE)
+plot(pr.0p, ylab="Prediction",xlab = 'Observation', main="Logistic Regression",
+     col = y$error, pch = 16)
+legend('right', inset = c(-0.3,0),c('Correct', 'Incorrect'), col = c(3,2), 
+       pch = 16)
+dev.off() # Reset Graph Options
 ```
 
 The misclassification rate of the logistic regression on the test set was `r mis.l`%. 
@@ -123,7 +137,7 @@ sv.l <- ksvm(language ~ ., data=x, kernel="vanilladot", scaled=F, type="C-svc")
 pr.svl <- predict(sv.l, newdata = y, type = "response")
 
 # Misclassification rate
-1-mean(pr.svl == y$language)
+mis.svl <- round(mean(pr.svl != y$language)*100, 2)
 ```
 
 ## Gaussian Kernel
@@ -134,7 +148,7 @@ sv.g <- ksvm(language ~ ., data=x, kernel="rbfdot", scaled=F, type="C-svc")
 pr.svg <- predict(sv.g, newdata = y, type = "response")
 
 # Misclassification rate
-1-mean(pr.svg == y$language)
+mis.svg <- round(mean(pr.svg != y$language)*100, 2)
 ```
 
 ## Kullback-Leibler Kernel
@@ -170,6 +184,7 @@ mykernel <- function(p, q) {
 
 class(mykernel) <- "kernel"
 
+mis.svk <- round(0.242381*100, 2)
 # Model and prediction
 # sv.k <- ksvm(language ~ ., data=x, kernel=mykernel, type="C-svc")
 # pr.svk <- predict(sv.k, newdata = y, type = "response")
@@ -180,8 +195,12 @@ class(mykernel) <- "kernel"
 
 # Discussion of Models and Choice of "Best"
 
-```{r}
+```{r, results='asis', echo=FALSE}
 # Table of model, time elapsed, misclassification error?
+models <- c("Logisitc", "Linear SVM", "Gaussian SVM", "Kullback-Leibler SVM")
+classerrors <- c(mis.l, mis.svl, mis.svg, mis.svk)
+errortable <- data.frame(Model=models, "Misclassification"=classerrors)
+kable(errortable)
 # Include example of sentence being classified?
 ```
 
