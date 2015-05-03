@@ -68,10 +68,13 @@ cleaned <- clean(example); cleaned
 features <- function(vec) {
   vec <- sapply(myletters, FUN = function(x){round(mean(vec==x),2)})
   vec[is.na(vec)] <- 0
-  return(data.frame(letter = myletters, frequency = vec))
+  return(data.frame(frequency = vec))
 }
 
-kable(t(features(cleaned))[,1:15])
+
+test <- t(features(cleaned))[,1:15]
+test
+kable(test)
 #kable(features(cleaned)[16:27,])
 ```
 
