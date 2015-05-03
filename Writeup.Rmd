@@ -69,16 +69,8 @@ features <- function(vec) {
   return(data.frame(frequency = vec))
 }
 
-<<<<<<< Updated upstream
-# 
-# test <- t(features(cleaned))[,1:15]
-# test
-# kable(test)
-# #kable(features(cleaned)[16:27,])
-=======
-
 kable(features(cleaned))
->>>>>>> Stashed changes
+
 ```
 
 ## Models Considered
