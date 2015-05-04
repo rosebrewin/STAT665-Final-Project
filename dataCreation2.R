@@ -28,7 +28,8 @@ createData <- function(url, language) {
   bible <- read.table(url, sep='\n', stringsAsFactors=F, quote="")
   
   bible <- bible[-(1:25), ] # remove title etc
-  bible <- bible[1:1000]
+  bible <- bible[1:1000] # managable amount of data
+  write.csv(bible, paste(language, "Raw.csv", sep=""), row.names=F)
   bible <- sapply(X = bible, FUN = clean) 
   
   data <- features(bible[[1]], language=1) # initialise data frame
