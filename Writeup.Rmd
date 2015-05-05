@@ -8,7 +8,6 @@ output:
     toc_depth: 3
     number_sections: true
     fig_caption: true
-bibliography: FinalProject.bib
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -227,13 +226,15 @@ To determine from which underlying distribution a given sentence comes, we can u
 
 $$D(p \|  q) = \sum_{i=1}^n p_i \log\left(\frac{p_i}{q_i}\right) $$
 
-In order to use this as a kernel in a support vector machine, we must ensure it is symmetric and positive semidefinite. Moreno \texttt{et al.} suggest the following transformation as a kernel:
+In order to use this as a kernel in a support vector machine, we must ensure it is symmetric and positive semidefinite. Moreno \textit{et al.} suggest the following transformation as a kernel:
 $$k(x, y) = \exp(-a(D(x\|y) + D(y\|x)))$$
-where $a$ is a parameter to be chosen.
+where $a$ is a parameter to be chosen.[^kl]
+
+[^kl] Moreno, P.J., \textit{et al.}, p. 3
 
 Using the \texttt{kernlab} package, we implement this SVM on our language classification data set.  It runs far slower than any of the alternative algorithms, which we suspect is, to some extent, because the package is not optimized for our kernel.
 
-Following experimentation with different values of the parameter $a$, we found that a value of **SOMETHING** minimizes the misclassification rate on the test set. With this we were able to achieve a misclassification rate of **SOMETHING**.
+Following experimentation with different values of the parameter $a$, we found that a value of 0.001 minimizes the misclassification rate on the test set, which still only did somewhat better than guessing with a misclassification rate of 40.33%.
 
 Because this is a user-defined fuction, we present the code below for clarity:
 
@@ -300,7 +301,7 @@ errortable <- data.frame(Model=models, Misclassification=classerrors, Time=times
 kable(errortable)
 ```
 
-The logistic regression model performs better than any of the SVM algorithms in both misclassification rate and computational efficiency.  The SVM with Kullback-Leibler kernel is by far the worst predictor of sentence language.  Although our consideration of choice of the a-parameter was thorough, perhaps further testing is required.
+The logistic regression model performs better than any of the SVM algorithms in both misclassification rate and computational efficiency.  The SVM with Kullback-Leibler kernel is by far the worst predictor of sentence language.  Although our consideration of choice of the $a$-parameter was thorough, perhaps further testing is required.
 
 # Two-letter Combinations
 
@@ -385,7 +386,7 @@ We have demonstrated that a SVM with Gaussian kernel has great success at differ
 
 We are curious as to whether or not a SVM with Gaussian kernel is still effective when challenged to distinguish between formal and colloquial uses of the English language.  Specifically, we try to correctly classify observations from social media messages on Twitter and sentences from \textit{New York Times} articles.  Figure 6[^nyt] is an example of a sentence that appears in a \texttt{New York Times} article and Figure 7[^tweet] is a public tweet:
 
-[^nyt]: Blinder \textit{et al.}
+[^nyt]: Blinder, A., \textit{et al.}
 
 [^tweet]: cotiti
 
@@ -397,7 +398,7 @@ We are curious as to whether or not a SVM with Gaussian kernel is still effectiv
 
 We trained a logistic regression model and our "best" model, the SVM with Gaussian kernel, using relative frequencies of pairs of letters that appear in sentences from each of \textit{The New York Times} and public postings from Twitter.  Using the Twitter API, we extracted 1000 of the most recent tweets from the site (as of 8:00 pm on Tuesday, April 28, 2015).  Similarly, we randomly chose 1000 sentences extracted from the top fifteen "Most Viewed" articles on www.nytimes.com (as of Friday, May 1st at 3:30 pm) using the \textit{Times} API.
 
-Each tweet from Twitter and each sentence from \textit{The New York Times} was cleaned using the same methodology described in Section 2.2, and the empirical distribution of frequencies of pairs of letters were created.  Our training data set consists of 600 tweets and 600 \textit{New York Times} sentences.
+Each tweet from Twitter and each sentence from \textit{The New York Times} was cleaned using the same methodology described in Section 2.2, and the empirical distribution of frequencies of pairs of letters were created.  Our training data set consists of 700 tweets and 700 \textit{New York Times} sentences.
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE,results='hide'}
 # Twitter is language == 1
@@ -520,7 +521,7 @@ The Holy Bible: Spanish Reina Valera. (n.d.). Christian Classics Ethereal Librar
   
 The Holy Bible: Webster's Bible. (n.d.). Christian Classics Ethereal Library. Retrieved April 24, 2015, from http://www.ccel.org/ccel/bible/webster.txt
 
-Moreno, P.J., Purdy. H.P., & Vasconcelos, N. (n.d.). A Kullback-Leibler Divergence Based Kernel for SVM Classification in Multimedia Applications. Retrieved April 29, 2015, from http://machinelearning.wustl.edu/mlpapers/paper_files/NIPS2003_SP02.pdf
+Moreno, P.J., Purdy. H.P., & Vasconcelos, N. (2003). A Kullback-Leibler Divergence Based Kernel for SVM Classification in Multimedia Applications. In \textit{Advances in Neural Information Processing Systems 16}.  S. Thrun, L.K. Saul, and B. Schölkopf, Eds. Retrieved April 29, 2015, from http://machinelearning.wustl.edu/mlpapers/paper_files/NIPS2003_SP02.pdf
 
 Negahban, S. (2015, March 4). Data Mining and Machine Learning: Lecture 15 [.pdf Notes]. Retrieved April 29, 2015, from https://classesv2.yale.edu/access/content/group/stat365_s15/Lectures/lec15.pdf
 
