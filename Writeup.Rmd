@@ -249,7 +249,7 @@ KL <- function(p, q) {
 }
 
 mykernel <- function(p, q) {
-  exp(0.001*(KL(p, q) + KL(q, p)))   # originally -.01
+  exp(0.001*(KL(p, q) + KL(q, p)))
 }
 
 class(mykernel) <- "kernel"
@@ -261,7 +261,7 @@ sv.k <- ksvm(language ~ ., data=xnew, kernel=mykernel, type="C-svc")
 pr.svk <- predict(sv.k, newdata = ynew, type = "response")
 
 # Misclassification rate
-mis.svk <- round(mean(pr.svk != y$language)*100, 2) #0.242381
+mis.svk <- round(mean(pr.svk != y$language)*100, 2)
 
 # Computational time
 time.svk <- round(as.numeric(now-then), 2)
@@ -275,7 +275,7 @@ y$error[pr.svk == y$language] <- 3 # Correct Classification
 # Plot
 par(mar=c(5.1, 5.1, 5.1, 8.1), xpd=TRUE)
 plot(jitter(pr.svk), ylab="",xlab = 'Observation', 
-     main="Kullback-Leibler Kernel",
+     main="Kullback-Leibler Kernel Prediction",
      col = y$error, pch = 16, yaxt = 'n')
 text(-120, 1, c('Other'))
 text(-120, 0, c('English'))
@@ -473,7 +473,7 @@ kable(dat)
 
 ## Model Limitations Specific to Classification of \textit{New York Times} versus Twitter
 
-We recognize that our data cleaning function presents obvious limitations that may specfically influence our model's ability to classify sentences as being either from the \textit{New York Times} or Twitter.  As previously discussed in Section 2.2, the function removes all capitalization of letters, as well as unique symbols.  Tweets make frequent use of the hashtag (#) and at (@) symbols, and this syntax is immediately.  Inclusion of such characters would likely increase the predictive ability of the SVM with Gaussian kernel.  Similarly, we know that punctuation differs between sentences appearing in \textit{The New York Times} and tweets.  While tweets sometimes provide emphasis with multiple exclamation points, this a pattern that would occur rarely (if ever) in a formal newspaper.
+We recognize that our data cleaning function presents obvious limitations that may specfically influence our model's ability to classify sentences as being either from the \textit{New York Times} or Twitter.  As previously discussed in Section 2.2, the function removes all capitalization of letters, as well as unique symbols.  Tweets make frequent use of the hashtag (#) and at (@) symbols, and this syntax is immediately lost.  Inclusion of such characters would likely increase the predictive ability of the SVM with Gaussian kernel.  Similarly, we know that punctuation differs between sentences appearing in \textit{The New York Times} and tweets.  While tweets sometimes provide emphasis with multiple exclamation points, this a pattern that would occur rarely (if ever) in a formal newspaper.
 
 Furthermore, because our function split sentences from \textit{New York Times} articles along periods, there were observations that consisted only of "mr" or "ms" that occurred when a person was referred to in an article as, for example, "Mr. [last name]".
 
@@ -490,7 +490,7 @@ Haven’t needed to tell it anytime about the languages considered
 
 ## General Model Limitations
 
-We recognize that our use of the Bible for classification algorithm training and testing limit the scope of our project, and we therefore do not claim to find the "best" model for language detection and classification of \textit{any} sentence.  However, we believe that our careful consideration of each of the techniques provide an outline by which extended study could be based.
+We recognize that our use of the Bible for classification algorithm training and testing limit the scope of our project, and we therefore do not claim to find the "best" model for language detection and classification of \textit{any} sentence.  However, we believe that our careful consideration of each of the techniques discussed provide an outline on which extended study could be based.
 
 Furthermore, our data collection and cleaning methodology from this source resulted in sentences that were essentially nonsense; either they consisted of too little information (a single word) or words that were not specifically English. 
 
