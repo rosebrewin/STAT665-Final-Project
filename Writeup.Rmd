@@ -1,5 +1,5 @@
 ---
-title: 'STAT665 Final Project: Comparison of Machine Leaning Algorithms for Language Classification'
+title: 'STAT665 Final Project: Comparison of Machine Learning Algorithms for Language Classification'
 author: "Rose Brewin, Emily Dodwell, Samantha Emanuele"
 date: "May 5, 2015"
 output: 
@@ -36,9 +36,9 @@ y$language <- ifelse(y$language == 0, 0, 1)
 # Methodology for Data Collection and Model Preparation
 
 ## Data Collection
-We first consider observed frequency of twenty-seven characters; specifically the twenty-six letters of the Roman alphabet and a blank space.  
+We first consider the observed frequency of twenty-seven characters; specifically the twenty-six letters of the Roman alphabet and a blank space.  
 
-To train the various classfication algorithms considered, we found from the online Christian Classics Ethereal Library plain text documents of the Bible in various languages: English, French, Spanish, Latin, German, Dutch, and Italian[^bible].  Our decision to use the Bible was based on its status as a universal text, and it therefore acts as a sort of control among the languages considered.  The accessibility of plain text Bibles written in these languages informed their choosing, and because the goal of our model is to identify English sentences from non-English sentences, we were interested in a mixture of Romance languages that are Latin derivatives.
+To train the various classfication algorithms considered, we found from the online Christian Classics Ethereal Library plain text documents of the Bible in various languages: English, French, Spanish, Latin, German, Dutch, and Italian[^bible].  Our decision to use the Bible was based on its status as a universal text, and it therefore acts as a sort of control among the languages considered.  The accessibility of plain text Bibles written in these languages informed their choosing, and because the goal of our model is to identify English sentences from non-English sentences, we were interested in a mixture of languages that are Latin derivatives.
 
 [^bible]: \textit{The Holy Bible} (various lanuage versions)
 
@@ -89,7 +89,7 @@ We see that the blank space character appears most often; specifically there are
 To accomplish our stated purpose, we consider four classification algorithms:
 
 * Logistic Regression
-* Support Vector Machine with each of the following kernels:
+* Support Vector Machine (SVM) with each of the following kernels:
     * Linear
     * Gaussian
     * Kullback-Leibler
@@ -98,7 +98,7 @@ To assess which of these models is the "best" at correctly classifying Bible sen
 
 # Logistic Regression
 
-We first consider a logistic regression model as a baseline against which to compare other machine learning algorithms due to its simplicity and accessibility as a classification device for a binary categorical reponse variable.  Because the fitted values of a logitistic regression model are easily interpretable probabilities, this model also enables us to identify those lines of test data that the model incorrectly classifies or otherwise considers somewhat ambiguous.
+We first consider a logistic regression model as a baseline against which to compare other machine learning algorithms due to its simplicity and ubiquity as a classification device for a binary categorical reponse variable.  Because the fitted values of a logitistic regression model are easily interpretable probabilities, this model also enables us to identify those lines of test data that the model incorrectly classifies or otherwise considers somewhat ambiguous.
 
 ```{r, warning=FALSE, echo=FALSE, fig.cap="Predictions of Logistic Regression Model"}
 # Model and prediction
@@ -179,7 +179,7 @@ Figure 2 shows the predicted languages for each of the 600 test observations usi
 ## Gaussian Kernel
 
 We next consider an SVM with a Gaussian kernel:
-$$k(x, y) = \exp\left( \frac{\| x - y\|}{2\sigma^2} \right)$$
+$$k(x, y) = \exp\left( \frac{\| x - y\|^2_2}{2\sigma^2} \right)$$
 
 This is a very popular kernel in machine learning due to its flexibility in approximating a large variety of decision boundaries. However, it is known to be susceptible to overfitting, particularly when the training data set is small[^lec15].
 
@@ -220,9 +220,9 @@ Indeed, Figure 3 above shows that the Gaussian kernel predicts a sentence's lang
 
 ## Kullback-Leibler Kernel
 
-The feature vectors in our model are in the form of relative frequencies.  We can take advantage of this structure by treating them as empirical probability distributions. We assume that languages have an underlying distribution on the frequency of letters, and that from this distribution various sentences have been randomly created. 
+The feature vectors in our model are in the form of relative frequencies.  We can take advantage of this structure by treating them as empirical probability distributions. It is plausible that languages have an underlying distribution on the frequency of letters, and that from this distribution various sentences have been randomly created. 
 
-To determine from which underlying distribution a given sentence comes, we can use techniques from statistical theory.  We use a kernel based on the Kullback-Leibler Divergence between two distributions:
+To determine from which underlying distribution a given sentence comes, we can therefore use techniques from statistical theory.  We use a kernel based on the Kullback-Leibler Divergence between two distributions:
 
 $$D(p \|  q) = \sum_{i=1}^n p_i \log\left(\frac{p_i}{q_i}\right) $$
 
@@ -230,15 +230,15 @@ In order to use this as a kernel in a support vector machine, we must ensure it 
 $$k(x, y) = \exp(-a(D(x\|y) + D(y\|x)))$$
 where $a$ is a parameter to be chosen.[^kl]
 
-[^kl] Moreno, P.J., \textit{et al.}, p. 3
+[^kl]: Moreno, P.J., \textit{et al.}, p. 3
 
 Using the \texttt{kernlab} package, we implement this SVM on our language classification data set.  It runs far slower than any of the alternative algorithms, which we suspect is, to some extent, because the package is not optimized for our kernel.
 
 Following experimentation with different values of the parameter $a$, we found that a value of 0.001 minimizes the misclassification rate on the test set, which still only did somewhat better than guessing with a misclassification rate of 40.33%.
 
-Because this is a user-defined fuction, we present the code below for clarity:
+Because this is a custom fuction, we present the code below for clarity:
 
-```{r, warning=FALSE, message=FALSE, cache=TRUE, results='hide'}
+```{r, warning=FALSE, message=FALSE, cache = TRUE, results='hide'}
 # Add very small value to all values so 0 is not an issue
 xnew <- x; ynew <- y
 xnew[,-1] <- xnew[,-1] + .000000000000000001
@@ -254,7 +254,9 @@ mykernel <- function(p, q) {
 }
 
 class(mykernel) <- "kernel"
+```
 
+```{r, echo = FALSE, warning = FALSE}
 # Model and prediction
   then <- Sys.time()
 sv.k <- ksvm(language ~ ., data=xnew, kernel=mykernel, type="C-svc")
@@ -267,6 +269,7 @@ mis.svk <- round(mean(pr.svk != y$language)*100, 2)
 # Computational time
 time.svk <- round(as.numeric(now-then), 2)
 ```
+
 
 ```{r, echo = FALSE, fig.cap = "Predicted Outcomes from SVM Kullback-Leibler Kernel"}
 # Create error term
@@ -285,11 +288,12 @@ legend('right', inset = c(-0.3,0),c('Correct', 'Incorrect'),
 invisible(dev.off()) # Reset Graph Options
 ```
 
-\newpage 
+\newpage
 
 # Discussion of Models and Choice of a "Best"
 
-We present in the table below a summary of each model's misclassification rate on the test set, as well as the amount of time elapsed during each model's training.
+We present in the table below a summary of each model's misclassification rate (%) on the test set, as well as the amount of time in seconds elapsed during each model's training.
+
 
 ```{r, results='asis', echo=FALSE}
 # Table of model, time elapsed, misclassification error?
@@ -303,11 +307,13 @@ kable(errortable)
 
 The logistic regression model performs better than any of the SVM algorithms in both misclassification rate and computational efficiency.  The SVM with Kullback-Leibler kernel is by far the worst predictor of sentence language.  Although our consideration of choice of the $a$-parameter was thorough, perhaps further testing is required.
 
+
+
 # Two-letter Combinations
 
-We saw that our logistic regression model performed well when trained on the empirical distributions of single letter frequencies, and we hypothesized that we could reduce the misclassification rate even further by considering the empirical distributions of pairs of adjacent characters as they appeared in our original observations.  We suspected that greater specificity in our data set with $27^2 = 729$ columns would improve our best model's predictive accuracy because certain letter combinations are unique to specific languages.  For example, "pf" appears often in German (such as in "kopf", which means "head"), but never in English.  Similarly, "wh" appears often in English, but never in German.
+We saw that our logistic regression model performed well when trained on the empirical distributions of single letter frequencies, and we hypothesized that we could reduce the misclassification rate even further by considering the empirical distributions of pairs of adjacent characters as they appeared in our original observations.  We suspected that greater specificity in our data set with $27^2 = 729$ columns would improve our best model's predictive accuracy because certain letter combinations are unique to specific languages.  For example, "pf" appears often in German (such as in "kopf", which means "head"), but rarely in English.  Similarly, "wh" appears often in English, but rarely in German.
 
-We thus trained our two previously-identified top performing models, logistic regression and SVM with Gaussian kernel, on such a new data set.  
+We thus trained our two previously-identified top performing models, logistic regression and SVM with Gaussian kernel, on such a data set.  
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
 ## Read in two-letter files
@@ -378,13 +384,13 @@ We know from class[^lec15] that SVMs with a Gaussian kernel perform best when th
 
 [^lec15]: Negahban, Sahand. Data Mining and Machine Learning: Lecture 15.
 
-\newpage 
+
 
 # Application of Model: Twitter versus \textit{The New York Times}
 
 We have demonstrated that a SVM with Gaussian kernel has great success at differentiating sentences written in the English language from sentences written in other languages when trained with a good amount of data (in the form of relative frequencies for each of the possible 729 letter pairs per observation).  We are also interested in the extension of this finding to different uses of the English language.  Formal writing differs dramatically in style, punctuation, sentence structure, and vocabulary from more casual interactions, such as those that take place through social media platforms and make frequent use of abbreviations and slang.  All editors and writers for \textit{The New York Times} are expected to uphold the regulations set forth in \textit{The New York Times Manual of Style and Usage}.
 
-We are curious as to whether or not a SVM with Gaussian kernel is still effective when challenged to distinguish between formal and colloquial uses of the English language.  Specifically, we try to correctly classify observations from social media messages on Twitter and sentences from \textit{New York Times} articles.  Figure 6[^nyt] is an example of a sentence that appears in a \texttt{New York Times} article and Figure 7[^tweet] is a public tweet:
+We are curious as to whether or not a SVM with Gaussian kernel is still effective when challenged to distinguish between formal and colloquial uses of the English language.  Specifically, we try to correctly classify observations from social media messages on Twitter and sentences from \textit{New York Times} articles.  Figure 6[^nyt] is an example of a sentence that appears in a \textit{New York Times} article and Figure 7[^tweet] is a public tweet:
 
 [^nyt]: Blinder, A., \textit{et al.}
 
@@ -470,40 +476,41 @@ dat <- data.frame(Model=models, Misclassification=errors, Time=times)
 kable(dat)
 ```
 
-\newpage
+
 
 ## Model Limitations Specific to Classification of \textit{New York Times} versus Twitter
 
-We recognize that our data cleaning function presents obvious limitations that may specfically influence our model's ability to classify sentences as being either from the \textit{New York Times} or Twitter.  As previously discussed in Section 2.2, the function removes all capitalization of letters, as well as unique symbols.  Tweets make frequent use of the hashtag (#) and at (@) symbols, and this syntax is immediately lost.  Inclusion of such characters would likely increase the predictive ability of the SVM with Gaussian kernel.  Similarly, we know that punctuation differs between sentences appearing in \textit{The New York Times} and tweets.  While tweets sometimes provide emphasis with multiple exclamation points, this a pattern that would occur rarely (if ever) in a formal newspaper.
+We recognize that our data cleaning function presents obvious limitations that may specifically influence our model's ability to classify sentences as being either from the \textit{New York Times} or Twitter.  As previously discussed in Section 2.2, the function removes all capitalization of letters, as well as unique symbols.  Tweets make frequent use of the hashtag (#) and at (@) symbols, and this syntax is immediately lost.  Inclusion of such characters would likely increase the predictive ability of the SVM with Gaussian kernel.  Similarly, we know that punctuation differs between sentences appearing in \textit{The New York Times} and tweets.  While tweets sometimes provide emphasis with multiple exclamation points, this is a pattern that would occur rarely (if ever) in a formal newspaper.
+
+\newpage
 
 Furthermore, because our function split sentences from \textit{New York Times} articles along periods, there were observations that consisted only of "mr" or "ms" that occurred when a person was referred to in an article as, for example, "Mr. [last name]".
 
-\newpage
+
 
 # Conclusion
 
 ## Findings
 
-Given that we only gave it 1200 training lines, prediction is very good without any user input
+Our analysis revealed that the Gaussian Kernel SVM with two-letter pairs was the best classifier of languages among the algorithms considered. The model was able to achieve a small predictive error, despite being given a limited amount of training data. Furthermore, no prior understanding of the languages involved was required to implement the algorithm. This flexibility enabled us to use the same algorithm to detect differences within a single language, as shown by the \textit{The New York Times} and Twitter application.
 
-Haven’t needed to tell it anytime about the languages considered
-
+The other models were able to classify languages with reasonable accuracy, with the notable exception of the Kullback-Leibler Kernel SVM. When considering single letter frequencies, the logistic regression slightly outperformed the Gaussian SVM. However, when the additional complexity of two-letter pairs was added to the model, Gaussian SVM surpassed logistic regression. This is consistent with the known limitations of logistic regression on sparse matrices and the necessity of large data sets for Gaussian SVM. 
 
 ## General Model Limitations
 
-We recognize that our use of the Bible for classification algorithm training and testing limit the scope of our project, and we therefore do not claim to find the "best" model for language detection and classification of \textit{any} sentence.  However, we believe that our careful consideration of each of the techniques discussed provide an outline on which extended study could be based.
+We recognize that our sole use of the Bible for classification algorithm training and testing is a limitation of our research. Further research may consider text from a range of sources, in order to ensure full generalizability. 
 
-Furthermore, our data collection and cleaning methodology from this source resulted in sentences that were essentially nonsense; either they consisted of too little information (a single word) or words that were not specifically English. 
+Furthermore, our data collection and cleaning methodology from this source resulted in sentences that were essentially nonsense; either they consisted of too little information (a single word) or words that were not specifically English. This has led to a conservative estimate of misclassification rate, which may in truth be even lower than stated in this paper.
 
 ## Possible Extensions of Our Work
 
-Classification of languages as more than just English/non-English
+Future research may include multinomial language classification so that a specific language can be returned as opposed to a binary distinction between English and non-English. Additionally, we could increase the complexity further to consider not just pairs of letters, but strings of length three or more. This may enable even subtler distinctions to be made between different sources, such as author or time period of a text.
 
 \newpage
 
 # References
 
-Blinder, A., & Perez-Pena, R. (2015, May 1). 6 Baltimore Police Officers Charged in Freddie Gray Death. \texttt{The New York Times}. Retrieved May 4, 2015, from http://www.nytimes.com/2015/05/02/us/freddie-gray-autopsy-report-given-to-baltimore-prosecutors.html?_r=0
+Blinder, A., & Perez-Pena, R. (2015, May 1). 6 Baltimore Police Officers Charged in Freddie Gray Death. \textit{The New York Times}. Retrieved May 4, 2015, from http://www.nytimes.com/2015/05/02/us/freddie-gray-autopsy-report-given-to-baltimore-prosecutors.html?_r=0
 
 cotiti. [CotiCN21]. (2015, March 31). RT [CaseyMoreta] hi I’m Casey and omg rena is soooooo great I mean she plays bass like a beast and wow she’s so pretty lolz [Tweet]. Retrieved from https://twitter.com/CaseyMoreta/status/582764574388068354 
 
@@ -543,5 +550,5 @@ misclass <- dictionary$original[misclass] # Find which line of english bible had
 raw <- read.csv("englishRaw.csv", stringsAsFactors=F)
 misclass <- raw$x[misclass] # Actual bible lines
 dat <- data.frame("Misclassified Lines"=misclass)
-kable(dat, output = TRUE)
+kable(dat)
 ```
